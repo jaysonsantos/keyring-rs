@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use secret_service::{EncryptionType, SecretService};
 
 use crate::error::{KeyringError, ParseError, Result};
@@ -20,7 +22,7 @@ impl<'a> Keyring<'a> {
             collection.unlock()?;
         }
         let mut attrs = self.default_attributes();
-        attrs.push(("application", "rust-keyring"));
+        attrs.insert("application", "rust-keyring");
         let label = &format!("Password for {} on {}", self.username, self.service)[..];
         collection.create_item(
             label,
@@ -56,7 +58,10 @@ impl<'a> Keyring<'a> {
         Ok(item.delete()?)
     }
 
-    fn default_attributes(&self) -> Vec<(&'a str, &'a str)> {
-        vec![("service", self.service), ("username", self.username)]
+    fn default_attributes(&self) -> HashMap<&'a str, &'a str> {
+        let mut attributes = HashMap::new();
+        attributes.insert("service", self.service);
+        attributes.insert("username", self.username);
+        attributes
     }
 }
