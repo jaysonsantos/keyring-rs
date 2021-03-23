@@ -1,5 +1,6 @@
-use crate::error::{KeyringError, Result};
 use secret_service::{EncryptionType, SecretService};
+
+use crate::error::{KeyringError, ParseError, Result};
 
 pub struct Keyring<'a> {
     service: &'a str,
@@ -40,7 +41,7 @@ impl<'a> Keyring<'a> {
         let search = collection.search_items(self.default_attributes())?;
         let item = search.get(0).ok_or(KeyringError::NoPasswordFound)?;
         let secret_bytes = item.get_secret()?;
-        let secret = String::from_utf8(secret_bytes)?;
+        let secret = String::from_utf8(secret_bytes).map_err(ParseError::Utf8)?;
         Ok(secret)
     }
 

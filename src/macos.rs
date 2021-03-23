@@ -1,8 +1,10 @@
-use crate::error::Result;
+use std::path::Path;
+
 use security_framework::os::macos::keychain::SecKeychain;
 use security_framework::os::macos::passwords::find_generic_password;
 
-use std::path::Path;
+use crate::error::{ParseError, Result};
+
 pub struct Keyring<'a> {
     service: &'a str,
     username: &'a str,
@@ -53,7 +55,7 @@ impl<'a> Keyring<'a> {
         // to the keychain, so this should only fail if we are trying to retrieve a non-UTF8
         // password that was added to the keychain by another library
 
-        let password = String::from_utf8(password_bytes.to_vec())?;
+        let password = String::from_utf8(password_bytes.to_vec()).map_err(ParseError::Utf8)?;
 
         Ok(password)
     }
@@ -72,9 +74,11 @@ impl<'a> Keyring<'a> {
 mod test {
     use super::*;
 
-    use keychain_services::keychain::Keychain;
-    use security_framework::os::macos::keychain;
-    use tempfile::{tempdir, TempDir};
+    #[cfg(feature = "macos-specify-keychain")]
+    mod specific {
+        pub use security_framework::os::macos::keychain;
+        pub use tempfile::tempdir;
+    }
 
     #[test]
     fn test_basic() {
@@ -100,6 +104,8 @@ mod test {
     #[ignore]
     #[cfg(feature = "macos-specify-keychain")]
     fn test_basic_with_features() {
+        use specific::*;
+
         let password_1 = "大根";
         let password_2 = "0xE5A4A7E6A0B9"; // Above in hex string
 
